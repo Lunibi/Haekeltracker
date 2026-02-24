@@ -13,15 +13,20 @@ function setFocus(id) {
 }
 
 /**
- * Wechselt den Status eines Projekts (aktiv ↔ abgeschlossen)
+ * Wechselt den Status eines Projekts durch: aktiv → abgeschlossen → abgebrochen → aktiv
  * @param {number} id - Projekt-ID
  */
 function toggleStatus(id) {
-    projects = projects.map(p => 
-        p.id === id 
-            ? {...p, status: p.status === 'aktiv' ? 'abgeschlossen' : 'aktiv'} 
-            : p
-    );
+    projects = projects.map(p => {
+        if (p.id === id) {
+            let newStatus;
+            if (p.status === 'aktiv') newStatus = 'abgeschlossen';
+            else if (p.status === 'abgeschlossen') newStatus = 'abgebrochen';
+            else newStatus = 'aktiv';
+            return {...p, status: newStatus};
+        }
+        return p;
+    });
     saveToStorage();
     renderProjects();
 }
