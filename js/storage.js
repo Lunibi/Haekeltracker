@@ -4,10 +4,14 @@
 
 /**
  * Lädt alle Daten aus dem LocalStorage
+ * Migriert automatisch alte Daten falls vorhanden
  */
 function loadFromStorage() {
+    // Prüfe erst ob neue Datenstruktur vorhanden ist
     const stored = localStorage.getItem('haekelTrackerData');
+    
     if (stored) {
+        // Neue Datenstruktur vorhanden - normal laden
         const data = JSON.parse(stored);
         projects = data.projects || [];
         sessions = data.sessions || [];
@@ -16,6 +20,30 @@ function loadFromStorage() {
         // Fallback: Wenn kein fokussiertes Projekt gesetzt ist, nimm das erste aktive
         if (!focusedProjectId && projects.length > 0) {
             focusedProjectId = projects[0].id;
+        }
+    } else {
+        // Keine neuen Daten - prüfe ob alte Daten vorhanden sind (Migration)
+        const oldProjects = localStorage.getItem('crochet_projects');
+        const oldSessions = localStorage.getItem('crochet_sessions');
+        const oldFocusedId = localStorage.getItem('crochet_focused_id');
+        
+        if (oldProjects || oldSessions) {
+            console.log('🔄 Migriere alte Daten zur neuen Struktur...');
+            
+            // Lade alte Daten
+            projects = oldProjects ? JSON.parse(oldProjects) : [];
+            sessions = oldSessions ? JSON.parse(oldSessions) : [];
+            focusedProjectId = oldFocusedId ? parseInt(oldFocusedId) : (projects[0]?.id || null);
+            
+            // Speichere in neuer Struktur
+            saveToStorage();
+            
+            // Optional: Lösche alte Daten (auskommentiert falls du sie behalten willst)
+            // localStorage.removeItem('crochet_projects');
+            // localStorage.removeItem('crochet_sessions');
+            // localStorage.removeItem('crochet_focused_id');
+            
+            console.log('✅ Migration erfolgreich!');
         }
     }
 }
