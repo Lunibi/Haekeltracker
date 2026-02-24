@@ -3,6 +3,15 @@
 // =====================================================
 
 /**
+ * Gibt das heutige Datum im Format YYYY-MM-DD zurück (lokale Zeit!)
+ * @returns {string} Datum als String
+ */
+function getTodayString() {
+    const now = new Date();
+    return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
+}
+
+/**
  * Startet den Timer für ein Projekt
  * @param {number} id - Projekt-ID
  */
@@ -53,7 +62,7 @@ function updateTimerDisplay() {
  * @param {string} date - Optional: Datum im Format YYYY-MM-DD (default: heute)
  */
 function logSession(projectId, seconds, date = null) {
-    const sessionDate = date || new Date().toISOString().split('T')[0];
+    const sessionDate = date || getTodayString();
     sessions.push({
         projectId: projectId,
         seconds: seconds,

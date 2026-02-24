@@ -115,7 +115,7 @@ function createFocusedProjectCard(project) {
         
         <div class="bg-white/50 rounded-2xl p-4 text-center">
             <p class="text-stone-400 text-[10px] uppercase font-black tracking-widest mb-1">Gesamtzeit</p>
-            <p id="timer-display-${project.id}" class="text-3xl font-black text-rose-600">${formatTime(totalTime)}</p>
+            <p class="text-3xl font-black text-rose-600">${formatTime(totalTime)}</p>
         </div>
         
         <div class="flex gap-2 items-start">
@@ -138,20 +138,20 @@ function createFocusedProjectCard(project) {
         
         <div class="grid grid-cols-2 gap-3">
             ${isRunning ? 
-                `<button onclick="stopTimer()" class="flex items-center justify-center gap-2 bg-rose-500 text-white py-3 rounded-xl font-bold shadow-lg shadow-rose-100 active:scale-95 transition-transform">
-                    <i data-lucide="square" class="w-4 h-4"></i>
-                    Stopp
+                `<button onclick="stopTimer()" class="col-span-2 bg-rose-500 text-white py-4 rounded-xl font-bold shadow-lg shadow-rose-100 active:scale-95 transition-transform flex flex-col items-center gap-1">
+                    <span class="text-rose-200 text-[10px] uppercase font-black tracking-widest">Laufende Session</span>
+                    <span id="timer-display-${project.id}" class="text-2xl font-black font-mono">${formatTime(0)}</span>
                 </button>` 
                 : 
                 `<button onclick="startTimer(${project.id})" class="flex items-center justify-center gap-2 bg-rose-500 text-white py-3 rounded-xl font-bold shadow-lg shadow-rose-100 active:scale-95 transition-transform">
                     <i data-lucide="play" class="w-4 h-4"></i>
                     Start
+                </button>
+                <button onclick="openManualModal(${project.id})" class="flex items-center justify-center gap-2 bg-white border-2 border-stone-100 py-3 rounded-xl text-stone-600 font-bold active:bg-stone-50 transition-all">
+                    <i data-lucide="plus" class="w-4 h-4"></i>
+                    Zeit
                 </button>`
             }
-            <button onclick="openManualModal(${project.id})" class="flex items-center justify-center gap-2 bg-white border-2 border-stone-100 py-3 rounded-xl text-stone-600 font-bold active:bg-stone-50 transition-all">
-                <i data-lucide="plus" class="w-4 h-4"></i>
-                Zeit
-            </button>
         </div>
     `;
     

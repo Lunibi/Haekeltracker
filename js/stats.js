@@ -91,38 +91,44 @@ function renderMonthCalendar(container, dailyData) {
     
     // Tage des Monats
     for (let day = 1; day <= lastDay.getDate(); day++) {
-        const date = new Date(currentStatsMonth.getFullYear(), currentStatsMonth.getMonth(), day);
-        const dateString = date.toISOString().split('T')[0];
+        // Datum im lokalen Format YYYY-MM-DD erstellen
+        const year = currentStatsMonth.getFullYear();
+        const month = currentStatsMonth.getMonth() + 1;
+        const dateString = `${year}-${String(month).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
         const dayData = dailyData[dateString];
         
-        const dayCell = document.createElement('div');
-        dayCell.className = 'aspect-square flex flex-col items-center justify-center rounded-lg text-sm relative';
+        const dayCell = document.createElement('button');
+        dayCell.className = 'aspect-square flex flex-col items-center justify-center rounded-lg text-xs relative p-1 transition-all';
         
         if (dayData) {
             // Es gibt Daten für diesen Tag
             const totalSeconds = Object.values(dayData).reduce((sum, s) => sum + s, 0);
-            const hours = totalSeconds / 3600;
+            const hours = Math.floor(totalSeconds / 3600);
+            const minutes = Math.floor((totalSeconds % 3600) / 60);
             
-            // Intensität basierend auf Stunden (0-4+ Stunden)
-            let intensity = 'bg-stone-100';
-            if (hours >= 4) intensity = 'bg-rose-400 text-white font-bold';
-            else if (hours >= 3) intensity = 'bg-rose-300 text-white font-bold';
-            else if (hours >= 2) intensity = 'bg-rose-200 text-rose-800 font-bold';
-            else if (hours >= 1) intensity = 'bg-rose-100 text-rose-700';
+            // Balken-Höhe basierend auf Zeit (max bei 4+ Stunden)
+            const barHeight = Math.min((totalSeconds / 14400) * 100, 100); // 14400 = 4 Stunden
             
-            dayCell.className += ` ${intensity} cursor-pointer`;
+            dayCell.className += ' bg-white border-2 border-rose-200 hover:border-rose-400 cursor-pointer';
             dayCell.onclick = () => scrollToDate(dateString);
+            
+            dayCell.innerHTML = `
+                <div class="font-bold text-stone-800 mb-1">${day}</div>
+                <div class="w-full h-2 bg-stone-100 rounded-full overflow-hidden mb-1">
+                    <div class="h-full bg-rose-400 rounded-full" style="width: ${barHeight}%"></div>
+                </div>
+                <div class="text-[8px] font-bold text-rose-600">${hours > 0 ? hours + 'h' : ''} ${minutes}m</div>
+            `;
         } else {
-            dayCell.className += ' bg-stone-50 text-stone-400';
+            dayCell.className += ' bg-stone-50 text-stone-400 cursor-default';
+            dayCell.innerHTML = `<div class="font-medium">${day}</div>`;
         }
         
         // Heutiger Tag markieren
-        const today = new Date().toISOString().split('T')[0];
-        if (dateString === today) {
+        if (dateString === getTodayString()) {
             dayCell.className += ' ring-2 ring-rose-500';
         }
         
-        dayCell.textContent = day;
         calendar.appendChild(dayCell);
     }
     

@@ -101,9 +101,8 @@ function openManualModal(id, editMode = false) {
     document.getElementById('manual-project-name').innerText = project.name;
     document.getElementById('manual-modal-title').innerText = editMode ? 'Gesamtzeit korrigieren' : 'Zeit hinzufügen';
     
-    // Setze Datum auf heute
-    const today = new Date().toISOString().split('T')[0];
-    document.getElementById('manual-date').value = today;
+    // Setze Datum auf heute (lokale Zeit!)
+    document.getElementById('manual-date').value = getTodayString();
     
     document.getElementById('modal-manual-time').classList.remove('hidden');
     
