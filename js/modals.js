@@ -100,6 +100,11 @@ function openManualModal(id, editMode = false) {
     isEditingTotal = editMode;
     document.getElementById('manual-project-name').innerText = project.name;
     document.getElementById('manual-modal-title').innerText = editMode ? 'Gesamtzeit korrigieren' : 'Zeit hinzufügen';
+    
+    // Setze Datum auf heute
+    const today = new Date().toISOString().split('T')[0];
+    document.getElementById('manual-date').value = today;
+    
     document.getElementById('modal-manual-time').classList.remove('hidden');
     
     if (editMode) {
@@ -133,17 +138,18 @@ function submitManualTime() {
     const m = parseInt(document.getElementById('manual-m').value) || 0;
     const s = parseInt(document.getElementById('manual-s').value) || 0;
     const totalSeconds = (h * 3600) + (m * 60) + s;
+    const selectedDate = document.getElementById('manual-date').value;
     
     if (isEditingTotal) {
         // Lösche alle bisherigen Sessions für dieses Projekt
         sessions = sessions.filter(s => s.projectId !== targetManualProjectId);
         // Füge neue Gesamtzeit hinzu (falls > 0)
         if (totalSeconds > 0) {
-            logSession(targetManualProjectId, totalSeconds);
+            logSession(targetManualProjectId, totalSeconds, selectedDate);
         }
     } else if (totalSeconds > 0) {
-        // Füge Zeit hinzu
-        logSession(targetManualProjectId, totalSeconds);
+        // Füge Zeit mit gewähltem Datum hinzu
+        logSession(targetManualProjectId, totalSeconds, selectedDate);
     }
     
     closeManualModal();

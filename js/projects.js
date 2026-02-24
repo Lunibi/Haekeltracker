@@ -69,10 +69,53 @@ function updateNote(id, note) {
 }
 
 /**
+ * Wird bei jeder Eingabe im Notizfeld aufgerufen
+ * Zeigt den Speichern-Button an und passt die Höhe an
+ * @param {number} id - Projekt-ID
+ * @param {HTMLElement} textarea - Das Textarea-Element
+ */
+function handleNoteInput(id, textarea) {
+    // Zeige Speichern-Button
+    const saveBtn = document.getElementById(`note-save-btn-${id}`);
+    if (saveBtn) {
+        saveBtn.classList.remove('hidden');
+    }
+    
+    // Auto-grow
+    autoGrowTextarea(textarea);
+}
+
+/**
+ * Speichert die Notiz und versteckt den Button wieder
+ * @param {number} id - Projekt-ID
+ */
+function saveNote(id) {
+    const textarea = document.getElementById(`note-${id}`);
+    const saveBtn = document.getElementById(`note-save-btn-${id}`);
+    
+    if (textarea) {
+        updateNote(id, textarea.value);
+        
+        // Verstecke Button
+        if (saveBtn) {
+            saveBtn.classList.add('hidden');
+        }
+        
+        // Minimiere Textarea wenn leer
+        if (!textarea.value.trim()) {
+            textarea.style.height = '38px';
+        }
+        
+        // Blur um Tastatur zu schließen
+        textarea.blur();
+    }
+}
+
+/**
  * Passt die Höhe der Notiz-Textarea automatisch an den Inhalt an
  * @param {HTMLElement} textarea - Das Textarea-Element
  */
 function autoGrowTextarea(textarea) {
     textarea.style.height = 'auto';
-    textarea.style.height = textarea.scrollHeight + 'px';
+    textarea.style.height = Math.max(38, textarea.scrollHeight) + 'px';
 }

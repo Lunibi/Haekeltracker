@@ -104,11 +104,11 @@ function createFocusedProjectCard(project) {
                 <p class="text-stone-400 text-[10px] uppercase font-black tracking-widest">Fokus-Projekt</p>
             </div>
             <div class="flex gap-1">
-                <button onclick="toggleStatus(${project.id})" class="p-2 bg-white rounded-xl shadow-sm border border-rose-100" title="Status wechseln: ${statusLabel}">
-                    <i data-lucide="${statusIcon}" class="w-5 h-5 ${statusColor}"></i>
-                </button>
                 <button onclick="openEditProjectModal(${project.id})" class="text-stone-400 hover:text-rose-500 p-2" title="Projekt umbenennen">
                     <i data-lucide="edit-3" class="w-4 h-4"></i>
+                </button>
+                <button onclick="toggleStatus(${project.id})" class="p-2 bg-white rounded-xl shadow-sm border border-rose-100" title="Status wechseln: ${statusLabel}">
+                    <i data-lucide="${statusIcon}" class="w-5 h-5 ${statusColor}"></i>
                 </button>
             </div>
         </div>
@@ -116,6 +116,24 @@ function createFocusedProjectCard(project) {
         <div class="bg-white/50 rounded-2xl p-4 text-center">
             <p class="text-stone-400 text-[10px] uppercase font-black tracking-widest mb-1">Gesamtzeit</p>
             <p id="timer-display-${project.id}" class="text-3xl font-black text-rose-600">${formatTime(totalTime)}</p>
+        </div>
+        
+        <div class="flex gap-2 items-start">
+            <textarea 
+                id="note-${project.id}"
+                class="note-input flex-1 bg-white/50 rounded-xl px-4 py-2 text-sm border-2 border-transparent focus:border-rose-200 outline-none transition-all resize-none overflow-hidden" 
+                placeholder="Notizen..." 
+                style="min-height: 38px; line-height: 1.5;"
+                oninput="handleNoteInput(${project.id}, this)"
+            >${project.note || ''}</textarea>
+            <button 
+                id="note-save-btn-${project.id}"
+                onclick="saveNote(${project.id})"
+                class="hidden bg-rose-500 text-white px-4 py-2 rounded-xl font-bold shadow-sm active:scale-95 transition-transform"
+                style="min-height: 38px;"
+            >
+                <i data-lucide="check" class="w-4 h-4"></i>
+            </button>
         </div>
         
         <div class="grid grid-cols-2 gap-3">
@@ -135,18 +153,11 @@ function createFocusedProjectCard(project) {
                 Zeit
             </button>
         </div>
-        
-        <textarea 
-            class="note-input w-full bg-white/50 rounded-xl px-4 py-3 text-sm border-2 border-transparent focus:border-rose-200 outline-none transition-all" 
-            placeholder="Notizen..." 
-            oninput="updateNote(${project.id}, this.value); autoGrowTextarea(this)"
-            onload="autoGrowTextarea(this)"
-        >${project.note || ''}</textarea>
     `;
     
     // Auto-grow für die Textarea beim Laden
     setTimeout(() => {
-        const textarea = card.querySelector('textarea');
+        const textarea = card.querySelector(`#note-${project.id}`);
         if (textarea) autoGrowTextarea(textarea);
     }, 0);
     
@@ -183,6 +194,13 @@ function createCompactProjectCard(project) {
     const card = document.createElement('div');
     card.className = `${cardBg} rounded-2xl p-4 border-2 ${borderColor} space-y-3`;
     
+    // Notiz-Preview (erste Zeile, max 50 Zeichen)
+    let notePreview = '';
+    if (project.note && project.note.trim()) {
+        const firstLine = project.note.split('\n')[0];
+        notePreview = firstLine.length > 50 ? firstLine.substring(0, 50) + '...' : firstLine;
+    }
+    
     card.innerHTML = `
         <div class="flex justify-between items-start">
             <div class="flex-1" onclick="setFocus(${project.id})" style="cursor: pointer;">
@@ -190,6 +208,7 @@ function createCompactProjectCard(project) {
                     <h4 class="font-bold text-stone-800">${project.name}</h4>
                 </div>
                 <p class="text-xs text-stone-500">${formatTime(totalTime)}</p>
+                ${notePreview ? `<p class="text-xs text-stone-400 italic mt-1">${notePreview}</p>` : ''}
             </div>
             <div class="flex gap-1">
                 <button onclick="openManualModal(${project.id}, true)" class="text-stone-400 hover:text-rose-500 p-2" title="Zeit korrigieren">

@@ -50,13 +50,14 @@ function updateTimerDisplay() {
  * Speichert eine Zeit-Session
  * @param {number} projectId - Projekt-ID
  * @param {number} seconds - Anzahl Sekunden
+ * @param {string} date - Optional: Datum im Format YYYY-MM-DD (default: heute)
  */
-function logSession(projectId, seconds) {
-    const today = new Date().toISOString().split('T')[0];
+function logSession(projectId, seconds, date = null) {
+    const sessionDate = date || new Date().toISOString().split('T')[0];
     sessions.push({
         projectId: projectId,
         seconds: seconds,
-        date: today
+        date: sessionDate
     });
     saveToStorage();
 }
