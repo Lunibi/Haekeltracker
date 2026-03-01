@@ -6,18 +6,17 @@
  * Lädt alle Daten aus dem LocalStorage
  */
 function loadFromStorage() {
+    // 1. Zuerst aus LocalStorage laden für schnelles Anzeigen
     const stored = localStorage.getItem('haekelTrackerData');
     if (stored) {
         const data = JSON.parse(stored);
         projects = data.projects || [];
         sessions = data.sessions || [];
-        focusedProjectId = data.focusedProjectId || null;
-        
-        // Fallback: Wenn kein fokussiertes Projekt gesetzt ist, nimm das erste aktive
-        if (!focusedProjectId && projects.length > 0) {
-            focusedProjectId = projects[0].id;
-        }
+        focusedProjectId = data.focusedProjectId || (projects[0]?.id || null);
     }
+
+    // 2. Dann Firebase-Cloud-Daten im Hintergrund synchronisieren
+    // Startet automatisch den Snapshot-Listener in firebase-handler.js
 }
 
 /**
@@ -30,6 +29,11 @@ function saveToStorage() {
         focusedProjectId: focusedProjectId
     };
     localStorage.setItem('haekelTrackerData', JSON.stringify(data));
+
+    // Auch in die Firebase Cloud speichern (falls bereit)
+    if (typeof saveToCloud === "function") {
+        saveToCloud();
+    }
 }
 
 /**
@@ -70,8 +74,8 @@ function importData() {
                 renderProjects();
                 document.getElementById('modal-data-io').classList.add('hidden');
             }
-        } catch (e) { 
-            alert("Ungültiger Code!"); 
+        } catch (e) {
+            alert("Ungültiger Code!");
         }
     };
     document.getElementById('modal-data-io').classList.remove('hidden');
@@ -80,6 +84,6 @@ function importData() {
 /**
  * Schließt das Import/Export Modal
  */
-function closeIoModal() { 
-    document.getElementById('modal-data-io').classList.add('hidden'); 
+function closeIoModal() {
+    document.getElementById('modal-data-io').classList.add('hidden');
 }

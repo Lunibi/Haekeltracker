@@ -6,15 +6,20 @@
  * Initialisiert die App beim Laden der Seite
  */
 function init() {
-    // Lade Daten aus LocalStorage
+    // 1. Lokale Daten als Fallback laden
     loadFromStorage();
-    
-    // Rendere Projekte
+
+    // 2. Firebase laden und mit Cloud synchronisieren
+    if (typeof initFirebase === "function") {
+        initFirebase();
+    }
+
+    // UI initialisieren
     renderProjects();
-    
+
     // Icons initialisieren
     lucide.createIcons();
-    
+
     console.log('Häkel-Tracker geladen!');
 }
 
