@@ -10,9 +10,14 @@ let currentStatsMonth = new Date();
 function renderStats() {
     // Gesamtzeit berechnen
     const total = sessions.reduce((sum, s) => sum + s.seconds, 0);
-    document.getElementById('total-time-display').innerText = formatTime(total);
+    const totalDisplay = document.getElementById('total-time-display');
+    if (totalDisplay) {
+        totalDisplay.innerText = formatTime(total);
+    }
 
     const statsContainer = document.getElementById('daily-stats');
+    if (!statsContainer) return;
+    
     statsContainer.innerHTML = '';
 
     // Gruppiere Sessions nach Datum und Projekt
@@ -39,7 +44,9 @@ function renderStats() {
     renderTimeline(statsContainer, dailyData);
 
     // Lucide Icons aktualisieren
-    lucide.createIcons();
+    if (window.lucide) {
+        lucide.createIcons();
+    }
 }
 
 /**
@@ -91,7 +98,6 @@ function renderMonthCalendar(container, dailyData) {
 
     // Tage des Monats
     for (let day = 1; day <= lastDay.getDate(); day++) {
-        // Datum im lokalen Format YYYY-MM-DD erstellen
         const year = currentStatsMonth.getFullYear();
         const month = currentStatsMonth.getMonth() + 1;
         const dateString = `${year}-${String(month).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
@@ -101,13 +107,10 @@ function renderMonthCalendar(container, dailyData) {
         dayCell.className = 'aspect-square flex flex-col items-center justify-center rounded-lg text-xs relative p-1 transition-all';
 
         if (dayData) {
-            // Es gibt Daten für diesen Tag
             const totalSeconds = Object.values(dayData).reduce((sum, s) => sum + s, 0);
             const hours = Math.floor(totalSeconds / 3600);
             const minutes = Math.floor((totalSeconds % 3600) / 60);
-
-            // Balken-Höhe basierend auf Zeit (max bei 2+ Stunden)
-            const barHeight = Math.min((totalSeconds / 7200) * 100, 100); // 7200 = 2 Stunden
+            const barHeight = Math.min((totalSeconds / 7200) * 100, 100);
 
             dayCell.className += ' bg-white border-2 border-rose-200 hover:border-rose-400 cursor-pointer';
             dayCell.onclick = () => scrollToDate(dateString);
@@ -124,7 +127,6 @@ function renderMonthCalendar(container, dailyData) {
             dayCell.innerHTML = `<div class="font-medium">${day}</div>`;
         }
 
-        // Heutiger Tag markieren
         if (dateString === getTodayString()) {
             dayCell.className += ' ring-2 ring-rose-500';
         }
@@ -166,15 +168,36 @@ function renderTimeline(container, dailyData) {
         dayCard.id = `timeline-${date}`;
         dayCard.className = 'bg-white rounded-xl p-4 mb-3 border border-stone-100';
 
-        let projectsHTML = '';
-        Object.entries(dayData).forEach(([projectId, seconds]) => {
-            const project = projects.find(p => p.id === parseInt(projectId));
-            const projectName = project ? project.name : 'Gelöschtes Projekt';
+        // Finde alle Sessions für diesen Tag
+        const daySessions = sessions
+            .filter(s => s.date === date)
+            .sort((a, b) => (b.time || '00:00').localeCompare(a.time || '00:00'));
 
-            projectsHTML += `
-                <div class="flex justify-between items-center py-1">
-                    <span class="text-sm text-stone-600">${projectName}</span>
-                    <span class="text-xs font-bold text-stone-800">${formatTime(seconds)}</span>
+        let sessionsHTML = '';
+        daySessions.forEach(session => {
+            const project = projects.find(p => p.id === session.projectId);
+            const projectName = project ? project.name : 'Gelöschtes Projekt';
+            const displayTime = session.time || '--:--';
+
+            sessionsHTML += `
+                <div class="flex justify-between items-center py-3 border-b border-stone-50 last:border-0">
+                    <div class="flex items-center gap-3">
+                        <div class="text-[10px] font-black text-stone-300 w-8">${displayTime}</div>
+                        <div>
+                            <div class="text-sm font-bold text-stone-700">${projectName}</div>
+                            <div class="text-[10px] text-stone-400 font-bold">${formatTime(session.seconds)}</div>
+                        </div>
+                    </div>
+                    <div class="flex gap-2">
+                        <button onclick="openEditSessionModal(${session.id})" class="p-2 text-stone-400 hover:text-rose-500 transition-colors">
+                            <i data-lucide="edit-3" class="w-4 h-4"></i>
+                        </button>
+                        <button id="delete-btn-${session.id}" onclick="confirmDelete(${session.id}, this)" 
+                            class="p-2 text-stone-300 hover:text-red-500 transition-all flex items-center gap-1 overflow-hidden whitespace-nowrap">
+                            <i data-lucide="trash-2" class="w-4 h-4"></i>
+                            <span class="delete-label hidden text-[10px] font-black uppercase">Sicher?</span>
+                        </button>
+                    </div>
                 </div>
             `;
         });
@@ -186,13 +209,51 @@ function renderTimeline(container, dailyData) {
                     <p class="text-lg font-bold text-stone-800">${formatTime(totalSeconds)}</p>
                 </div>
             </div>
-            <div class="space-y-1 border-t border-stone-100 pt-3">
-                ${projectsHTML}
+            <div class="space-y-1 border-t border-stone-100 pt-1">
+                ${sessionsHTML}
             </div>
         `;
 
         container.appendChild(dayCard);
     });
+}
+
+/**
+ * Zwei-Stufen-Löschung für Sessions in der Timeline
+ */
+let deleteTimeouts = {};
+
+function confirmDelete(sessionId, btn) {
+    const label = btn.querySelector('.delete-label');
+    
+    // Falls bereits im "Sicher?"-Modus -> Löschen!
+    if (btn.classList.contains('confirming')) {
+        clearTimeout(deleteTimeouts[sessionId]);
+        
+        // Robustes Filtern: Wir stellen sicher, dass wir nur den EINEN Eintrag entfernen
+        const index = sessions.findIndex(s => String(s.id) === String(sessionId));
+        if (index !== -1) {
+            sessions.splice(index, 1);
+            saveToStorage();
+            renderStats();
+            renderProjects();
+        }
+        return;
+    }
+    
+    // In "Sicher?"-Modus wechseln
+    btn.classList.add('confirming', 'bg-red-50', 'text-red-600', 'rounded-lg', 'px-3');
+    btn.classList.remove('text-stone-300');
+    if (label) label.classList.remove('hidden');
+    
+    // Nach 3 Sekunden zurücksetzen
+    deleteTimeouts[sessionId] = setTimeout(() => {
+        if (btn) {
+            btn.classList.remove('confirming', 'bg-red-50', 'text-red-600', 'rounded-lg', 'px-3');
+            btn.classList.add('text-stone-300');
+            if (label) label.classList.add('hidden');
+        }
+    }, 3000);
 }
 
 /**
@@ -210,7 +271,6 @@ function scrollToDate(dateString) {
     const element = document.getElementById(`timeline-${dateString}`);
     if (element) {
         element.scrollIntoView({ behavior: 'smooth', block: 'center' });
-        // Kurzes Highlight
         element.classList.add('ring-2', 'ring-rose-300');
         setTimeout(() => {
             element.classList.remove('ring-2', 'ring-rose-300');

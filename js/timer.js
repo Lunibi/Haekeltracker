@@ -22,6 +22,7 @@ function startTimer(id) {
     }
     activeTimerProjectId = id;
     timerStartTime = Date.now();
+    timerStartTimeStr = getTimeString(); // Speichere die exakte Start-Uhrzeit
     timerInterval = setInterval(updateTimerDisplay, 1000);
     renderProjects();
 }
@@ -33,11 +34,12 @@ function stopTimer() {
     if (!activeTimerProjectId || !timerStartTime) return;
     
     const elapsed = Math.floor((Date.now() - timerStartTime) / 1000);
-    logSession(activeTimerProjectId, elapsed);
+    logSession(activeTimerProjectId, elapsed, getTodayString(), timerStartTimeStr);
     
     clearInterval(timerInterval);
     activeTimerProjectId = null;
     timerStartTime = null;
+    timerStartTimeStr = null;
     timerInterval = null;
     renderProjects();
 }
@@ -56,17 +58,31 @@ function updateTimerDisplay() {
 }
 
 /**
+ * Gibt die aktuelle Uhrzeit im Format HH:mm zurück
+ * @returns {string} Uhrzeit als String
+ */
+function getTimeString() {
+    const now = new Date();
+    return `${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`;
+}
+
+/**
  * Speichert eine Zeit-Session
  * @param {number} projectId - Projekt-ID
  * @param {number} seconds - Anzahl Sekunden
  * @param {string} date - Optional: Datum im Format YYYY-MM-DD (default: heute)
+ * @param {string} time - Optional: Uhrzeit im Format HH:mm (default: jetzt)
  */
-function logSession(projectId, seconds, date = null) {
+function logSession(projectId, seconds, date = null, time = null) {
     const sessionDate = date || getTodayString();
+    const sessionTime = time || getTimeString();
+    
     sessions.push({
+        id: Date.now() + Math.floor(Math.random() * 1000), // Eindeutige ID
         projectId: projectId,
         seconds: seconds,
-        date: sessionDate
+        date: sessionDate,
+        time: sessionTime
     });
     saveToStorage();
 }

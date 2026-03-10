@@ -98,12 +98,16 @@ function openManualModal(id, editMode = false) {
     
     targetManualProjectId = id;
     isEditingTotal = editMode;
+    editingSessionId = null;
+    
     document.getElementById('manual-project-name').innerText = project.name;
     document.getElementById('manual-modal-title').innerText = editMode ? 'Gesamtzeit korrigieren' : 'Zeit hinzufügen';
     
-    // Setze Datum auf heute (lokale Zeit!)
+    // Setze Datum auf heute und Zeit auf jetzt
     document.getElementById('manual-date').value = getTodayString();
+    document.getElementById('manual-time').value = getTimeString();
     
+    document.getElementById('btn-delete-session').classList.add('hidden');
     document.getElementById('modal-manual-time').classList.remove('hidden');
     
     if (editMode) {
@@ -123,10 +127,61 @@ function openManualModal(id, editMode = false) {
 }
 
 /**
+ * Öffnet das Modal zum Bearbeiten einer spezifischen Session
+ * @param {number} sessionId - ID der Session
+ */
+/**
+ * Öffnet das Modal zum Bearbeiten einer spezifischen Session
+ * @param {number} sessionId - ID der Session
+ */
+function openEditSessionModal(sessionId) {
+    console.log("Öffne Session zum Bearbeiten:", sessionId);
+    const session = sessions.find(s => s.id === sessionId);
+    if (!session) {
+        console.error("Session nicht gefunden:", sessionId);
+        return;
+    }
+    
+    const project = projects.find(p => p.id === session.projectId);
+    
+    targetManualProjectId = session.projectId;
+    editingSessionId = sessionId;
+    isEditingTotal = false;
+
+    // Felder explizit zurücksetzen
+    document.getElementById('manual-h').value = '';
+    document.getElementById('manual-m').value = '';
+    document.getElementById('manual-s').value = '';
+    
+    document.getElementById('manual-project-name').innerText = project ? project.name : 'Unbekanntes Projekt';
+    document.getElementById('manual-modal-title').innerText = 'Eintrag bearbeiten';
+    
+    document.getElementById('manual-date').value = session.date;
+    document.getElementById('manual-time').value = session.time || '00:00';
+    
+    const totalSecs = parseInt(session.seconds) || 0;
+    const h = Math.floor(totalSecs / 3600);
+    const m = Math.floor((totalSecs % 3600) / 60);
+    const s = totalSecs % 60;
+
+    document.getElementById('manual-h').value = h > 0 ? h : '';
+    document.getElementById('manual-m').value = m > 0 ? m : '';
+    document.getElementById('manual-s').value = s > 0 ? s : '';
+    
+    document.getElementById('btn-delete-session').classList.remove('hidden');
+    document.getElementById('modal-manual-time').classList.remove('hidden');
+    
+    lucide.createIcons();
+    setTimeout(() => document.getElementById('manual-h').focus(), 50);
+}
+
+/**
  * Schließt das Manuelle-Zeit-Modal
  */
 function closeManualModal() {
     document.getElementById('modal-manual-time').classList.add('hidden');
+    editingSessionId = null;
+    targetManualProjectId = null;
 }
 
 /**
@@ -138,19 +193,54 @@ function submitManualTime() {
     const s = parseInt(document.getElementById('manual-s').value) || 0;
     const totalSeconds = (h * 3600) + (m * 60) + s;
     const selectedDate = document.getElementById('manual-date').value;
+    const selectedTime = document.getElementById('manual-time').value;
     
-    if (isEditingTotal) {
+    console.log("Speichere Zeit:", { editingSessionId, totalSeconds, selectedDate, selectedTime });
+
+    if (editingSessionId) {
+        // Bestehende Session bearbeiten
+        sessions = sessions.map(sess => {
+            if (sess.id === editingSessionId) {
+                return { ...sess, seconds: totalSeconds, date: selectedDate, time: selectedTime };
+            }
+            return sess;
+        });
+    } else if (isEditingTotal) {
         // Lösche alle bisherigen Sessions für dieses Projekt
         sessions = sessions.filter(s => s.projectId !== targetManualProjectId);
         // Füge neue Gesamtzeit hinzu (falls > 0)
         if (totalSeconds > 0) {
-            logSession(targetManualProjectId, totalSeconds, selectedDate);
+            logSession(targetManualProjectId, totalSeconds, selectedDate, selectedTime);
         }
     } else if (totalSeconds > 0) {
         // Füge Zeit mit gewähltem Datum hinzu
-        logSession(targetManualProjectId, totalSeconds, selectedDate);
+        logSession(targetManualProjectId, totalSeconds, selectedDate, selectedTime);
     }
     
+    saveToStorage();
     closeManualModal();
     renderProjects();
+    renderStats();
+}
+
+/**
+ * Löscht eine Session aus dem Modal heraus
+ */
+function deleteSessionFromModal() {
+    console.log("Lösch-Versuch für Session ID:", editingSessionId);
+    if (!editingSessionId) {
+        console.warn("Keine editingSessionId gesetzt.");
+        return;
+    }
+    
+    if (confirm('Diesen Eintrag wirklich löschen?')) {
+        const initialCount = sessions.length;
+        sessions = sessions.filter(s => String(s.id) !== String(editingSessionId));
+        console.log("Sessions vor Filter:", initialCount, "nach Filter:", sessions.length);
+        
+        saveToStorage();
+        closeManualModal();
+        renderProjects();
+        renderStats();
+    }
 }
