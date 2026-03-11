@@ -39,6 +39,7 @@ async function initFirebase() {
                 // (Einfache Version: Cloud gewinnt immer)
                 projects = cloudData.projects || [];
                 sessions = cloudData.sessions || [];
+                trash = cloudData.trash || { projects: [], sessions: [] };
                 focusedProjectId = cloudData.focusedProjectId || (projects[0]?.id || null);
 
                 // UI aktualisieren
@@ -70,6 +71,7 @@ async function saveToCloud() {
         const dataToSave = {
             projects: projects,
             sessions: sessions,
+            trash: trash,
             focusedProjectId: focusedProjectId,
             lastUpdated: new Date().toISOString()
         };

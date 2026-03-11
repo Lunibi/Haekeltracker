@@ -233,7 +233,8 @@ function confirmDelete(sessionId, btn) {
         // Robustes Filtern: Wir stellen sicher, dass wir nur den EINEN Eintrag entfernen
         const index = sessions.findIndex(s => String(s.id) === String(sessionId));
         if (index !== -1) {
-            sessions.splice(index, 1);
+            const deletedSession = sessions.splice(index, 1)[0];
+            trash.sessions.push(deletedSession);
             saveToStorage();
             renderStats();
             renderProjects();

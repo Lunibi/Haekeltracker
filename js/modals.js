@@ -244,3 +244,130 @@ function deleteSessionFromModal() {
         renderStats();
     }
 }
+
+// ----------------
+// Papierkorb Modal
+// ----------------
+
+/**
+ * Öffnet das Papierkorb-Modal und listet gelöschte Elemente auf
+ */
+function openTrashModal() {
+    const container = document.getElementById('trash-content');
+    container.innerHTML = '';
+
+    if (trash.projects.length === 0 && trash.sessions.length === 0) {
+        container.innerHTML = '<p class="text-center text-stone-300 py-8 text-sm">Der Papierkorb ist leer.</p>';
+    }
+
+    // Gelöschte Projekte auflisten
+    if (trash.projects.length > 0) {
+        const section = document.createElement('div');
+        section.innerHTML = '<h4 class="text-[10px] font-black text-stone-400 uppercase tracking-widest mb-2 px-2">Projekte</h4>';
+        trash.projects.forEach(p => {
+            const item = document.createElement('div');
+            item.className = 'bg-stone-50 p-4 rounded-2xl flex justify-between items-center mb-2';
+            item.innerHTML = `
+                <div>
+                    <p class="font-bold text-stone-800 text-sm">${p.name}</p>
+                    <p class="text-[10px] text-stone-400">ID: ${p.id}</p>
+                </div>
+                <button onclick="restoreProject(${p.id})" class="bg-white p-2 rounded-xl shadow-sm text-rose-500 hover:bg-rose-50 transition-all" title="Wiederherstellen">
+                    <i data-lucide="rotate-ccw" class="w-4 h-4"></i>
+                </button>
+            `;
+            section.appendChild(item);
+        });
+        container.appendChild(section);
+    }
+
+    // Gelöschte Sessions auflisten
+    if (trash.sessions.length > 0) {
+        const section = document.createElement('div');
+        section.innerHTML = '<h4 class="text-[10px] font-black text-stone-400 uppercase tracking-widest mt-6 mb-2 px-2">Einzelne Einträge</h4>';
+        trash.sessions.forEach(s => {
+            const project = projects.find(p => p.id === s.projectId) || trash.projects.find(p => p.id === s.projectId);
+            const projectName = project ? project.name : 'Unbekanntes Projekt';
+            
+            const item = document.createElement('div');
+            item.className = 'bg-stone-50 p-4 rounded-2xl flex justify-between items-center mb-2';
+            item.innerHTML = `
+                <div>
+                    <p class="font-bold text-stone-800 text-sm">${projectName}</p>
+                    <p class="text-[10px] text-stone-400">${s.date} • ${formatTime(s.seconds)}</p>
+                </div>
+                <button onclick="restoreSession(${s.id})" class="bg-white p-2 rounded-xl shadow-sm text-rose-500 hover:bg-rose-50 transition-all" title="Wiederherstellen">
+                    <i data-lucide="rotate-ccw" class="w-4 h-4"></i>
+                </button>
+            `;
+            section.appendChild(item);
+        });
+        container.appendChild(section);
+    }
+
+    document.getElementById('modal-trash').classList.remove('hidden');
+    lucide.createIcons();
+}
+
+/**
+ * Schließt das Papierkorb-Modal
+ */
+function closeTrashModal() {
+    document.getElementById('modal-trash').classList.add('hidden');
+}
+
+/**
+ * Stellt ein Projekt aus dem Papierkorb wieder her
+ */
+function restoreProject(id) {
+    const project = trash.projects.find(p => p.id === id);
+    if (!project) return;
+
+    // Aus Papierkorb entfernen
+    trash.projects = trash.projects.filter(p => p.id !== id);
+    
+    // Zu Projekten hinzufügen
+    projects.push(project);
+    
+    // Auch alle zugehörigen Sessions aus dem Papierkorb retten
+    const relatedSessions = trash.sessions.filter(s => s.projectId === id);
+    if (relatedSessions.length > 0) {
+        sessions.push(...relatedSessions);
+        trash.sessions = trash.sessions.filter(s => s.projectId !== id);
+    }
+
+    saveToStorage();
+    renderProjects();
+    renderStats();
+    openTrashModal(); // Liste aktualisieren
+}
+
+/**
+ * Stellt eine einzelne Session wieder her
+ */
+function restoreSession(id) {
+    const session = trash.sessions.find(s => s.id === id);
+    if (!session) return;
+
+    // Aus Papierkorb entfernen
+    trash.sessions = trash.sessions.filter(s => s.id !== id);
+    
+    // Zu Sessions hinzufügen
+    sessions.push(session);
+
+    saveToStorage();
+    renderProjects();
+    renderStats();
+    openTrashModal(); // Liste aktualisieren
+}
+
+/**
+ * Leert den Papierkorb endgültig
+ */
+function emptyTrash() {
+    if (confirm('Möchtest du den Papierkorb wirklich endgültig leeren? Diese Aktion kann nicht rückgängig gemacht werden.')) {
+        trash = { projects: [], sessions: [] };
+        saveToStorage();
+        openTrashModal();
+    }
+}

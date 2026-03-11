@@ -107,15 +107,28 @@ function createFocusedProjectCard(project) {
                 <button onclick="openEditProjectModal(${project.id})" class="text-stone-400 hover:text-rose-500 p-2" title="Projekt umbenennen">
                     <i data-lucide="edit-3" class="w-4 h-4"></i>
                 </button>
-                <button onclick="toggleStatus(${project.id})" class="p-2 bg-white rounded-xl shadow-sm border border-rose-100" title="Status wechseln: ${statusLabel}">
-                    <i data-lucide="${statusIcon}" class="w-5 h-5 ${statusColor}"></i>
-                </button>
             </div>
         </div>
         
         <div class="bg-white/50 rounded-2xl p-4 text-center">
             <p class="text-stone-400 text-[10px] uppercase font-black tracking-widest mb-1">Gesamtzeit</p>
             <p class="text-3xl font-black text-rose-600">${formatTime(totalTime)}</p>
+        </div>
+
+        <!-- Status Selection -->
+        <div class="flex bg-white/30 p-1 rounded-2xl gap-1">
+            <button onclick="setStatus(${project.id}, 'aktiv')" 
+                class="flex-1 py-2 rounded-xl text-[10px] font-black uppercase tracking-tighter transition-all ${project.status === 'aktiv' ? 'bg-white text-rose-600 shadow-sm' : 'text-stone-400 opacity-50'}">
+                Aktiv
+            </button>
+            <button onclick="setStatus(${project.id}, 'abgeschlossen')" 
+                class="flex-1 py-2 rounded-xl text-[10px] font-black uppercase tracking-tighter transition-all ${project.status === 'abgeschlossen' ? 'bg-green-500 text-white shadow-sm' : 'text-stone-400 opacity-50'}">
+                Fertig
+            </button>
+            <button onclick="setStatus(${project.id}, 'abgebrochen')" 
+                class="flex-1 py-2 rounded-xl text-[10px] font-black uppercase tracking-tighter transition-all ${project.status === 'abgebrochen' ? 'bg-stone-500 text-white shadow-sm' : 'text-stone-400 opacity-50'}">
+                Abbruch
+            </button>
         </div>
         
         <div class="flex gap-2 items-start">
@@ -138,10 +151,22 @@ function createFocusedProjectCard(project) {
         
         <div class="grid grid-cols-2 gap-3">
             ${isRunning ? 
-                `<button onclick="stopTimer()" class="col-span-2 bg-rose-500 text-white py-4 rounded-xl font-bold shadow-lg shadow-rose-100 active:scale-95 transition-transform flex flex-col items-center gap-1">
-                    <span class="text-rose-200 text-[10px] uppercase font-black tracking-widest">Laufende Session</span>
-                    <span id="timer-display-${project.id}" class="text-2xl font-black font-mono">${formatTime(0)}</span>
-                </button>` 
+                `<div class="col-span-2 space-y-3">
+                    <div class="bg-rose-500 text-white p-4 rounded-xl shadow-lg shadow-rose-100 flex flex-col items-center gap-1">
+                        <span class="text-rose-200 text-[10px] uppercase font-black tracking-widest">${isTimerPaused ? 'Session Pausiert' : 'Laufende Session'}</span>
+                        <span id="timer-display-${project.id}" class="text-3xl font-black font-mono">${formatTime(accumulatedTime + (isTimerPaused ? 0 : Math.floor((Date.now() - timerStartTime) / 1000)))}</span>
+                    </div>
+                    <div class="grid grid-cols-2 gap-2">
+                        <button onclick="togglePause()" class="flex items-center justify-center gap-2 bg-white border-2 border-rose-200 py-3 rounded-xl text-rose-600 font-bold active:scale-95 transition-all">
+                            <i data-lucide="${isTimerPaused ? 'play' : 'pause'}" class="w-4 h-4"></i>
+                            ${isTimerPaused ? 'Weiter' : 'Pause'}
+                        </button>
+                        <button onclick="stopTimer()" class="flex items-center justify-center gap-2 bg-rose-600 text-white py-3 rounded-xl font-bold shadow-md active:scale-95 transition-all">
+                            <i data-lucide="square" class="w-4 h-4 fill-white"></i>
+                            Stopp
+                        </button>
+                    </div>
+                </div>` 
                 : 
                 `<button onclick="startTimer(${project.id})" class="flex items-center justify-center gap-2 bg-rose-500 text-white py-3 rounded-xl font-bold shadow-lg shadow-rose-100 active:scale-95 transition-transform">
                     <i data-lucide="play" class="w-4 h-4"></i>
@@ -206,19 +231,17 @@ function createCompactProjectCard(project) {
             <div class="flex-1" onclick="setFocus(${project.id})" style="cursor: pointer;">
                 <div class="flex items-center gap-2 mb-1">
                     <h4 class="font-bold text-stone-800">${project.name}</h4>
+                    <i data-lucide="${statusIcon}" class="w-3 h-3 ${statusColor}"></i>
                 </div>
                 <p class="text-xs text-stone-500">${formatTime(totalTime)}</p>
                 ${notePreview ? `<p class="text-xs text-stone-400 italic mt-1">${notePreview}</p>` : ''}
             </div>
             <div class="flex gap-1">
-                <button onclick="openManualModal(${project.id}, true)" class="text-stone-400 hover:text-rose-500 p-2" title="Zeit korrigieren">
-                    <i data-lucide="clock" class="w-4 h-4"></i>
-                </button>
-                <button onclick="toggleStatus(${project.id})" class="p-2" title="Status ändern">
-                    <i data-lucide="${statusIcon}" class="w-4 h-4 ${statusColor}"></i>
-                </button>
-                <button onclick="deleteProject(${project.id})" class="text-stone-400 hover:text-red-500 p-2" title="Löschen">
+                <button onclick="deleteProject(${project.id}, this)" 
+                    class="p-2 text-stone-400 hover:text-red-500 transition-all flex items-center gap-1 overflow-hidden whitespace-nowrap" 
+                    title="Löschen">
                     <i data-lucide="trash-2" class="w-4 h-4"></i>
+                    <span class="delete-label hidden text-[10px] font-black uppercase">Sicher?</span>
                 </button>
             </div>
         </div>

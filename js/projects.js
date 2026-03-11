@@ -13,17 +13,14 @@ function setFocus(id) {
 }
 
 /**
- * Wechselt den Status eines Projekts durch: aktiv → abgeschlossen → abgebrochen → aktiv
+ * Setzt den Status eines Projekts (aktiv, abgeschlossen, abgebrochen)
  * @param {number} id - Projekt-ID
+ * @param {string} status - Der neue Status
  */
-function toggleStatus(id) {
+function setStatus(id, status) {
     projects = projects.map(p => {
         if (p.id === id) {
-            let newStatus;
-            if (p.status === 'aktiv') newStatus = 'abgeschlossen';
-            else if (p.status === 'abgeschlossen') newStatus = 'abgebrochen';
-            else newStatus = 'aktiv';
-            return {...p, status: newStatus};
+            return {...p, status: status};
         }
         return p;
     });
@@ -32,28 +29,61 @@ function toggleStatus(id) {
 }
 
 /**
- * Löscht ein Projekt (mit Bestätigung)
+ * Löscht ein Projekt (Zwei-Stufen-Bestätigung ohne Popup)
  * @param {number} id - Projekt-ID
+ * @param {HTMLElement} btn - Der Button-Element
  */
-function deleteProject(id) {
-    if (!confirm("Dieses Projekt wirklich unwiderruflich löschen?")) return;
+let deleteProjectTimeouts = {};
+
+function deleteProject(id, btn) {
+    const label = btn.querySelector('.delete-label');
     
-    // Stoppe Timer falls er für dieses Projekt läuft
-    if (activeTimerProjectId === id) {
-        stopTimer();
+    // Falls bereits im "Sicher?"-Modus -> Jetzt löschen!
+    if (btn.classList.contains('confirming')) {
+        clearTimeout(deleteProjectTimeouts[id]);
+        
+        // Stoppe Timer falls er für dieses Projekt läuft
+        if (activeTimerProjectId === id) {
+            stopTimer();
+        }
+        
+        // Finde das Projekt und verschiebe es in den Papierkorb
+        const projectToDelete = projects.find(p => p.id === id);
+        if (projectToDelete) {
+            trash.projects.push(projectToDelete);
+            
+            // Zugehörige Sessions ebenfalls in den Papierkorb verschieben
+            const projectSessions = sessions.filter(s => s.projectId === id);
+            trash.sessions.push(...projectSessions);
+            
+            // Aus Hauptarrays entfernen
+            projects = projects.filter(p => p.id !== id);
+            sessions = sessions.filter(s => s.projectId !== id);
+        }
+        
+        // Falls das gelöschte Projekt fokussiert war, fokussiere ein anderes
+        if (focusedProjectId === id) {
+            focusedProjectId = projects[0]?.id || null;
+        }
+        
+        saveToStorage();
+        renderProjects();
+        return;
     }
     
-    // Entferne Projekt und alle zugehörigen Sessions
-    projects = projects.filter(p => p.id !== id);
-    sessions = sessions.filter(s => s.projectId !== id);
+    // In "Sicher?"-Modus wechseln
+    btn.classList.add('confirming', 'bg-red-50', 'text-red-600', 'rounded-lg', 'px-3');
+    btn.classList.remove('text-stone-400');
+    if (label) label.classList.remove('hidden');
     
-    // Falls das gelöschte Projekt fokussiert war, fokussiere ein anderes
-    if (focusedProjectId === id) {
-        focusedProjectId = projects[0]?.id || null;
-    }
-    
-    saveToStorage();
-    renderProjects();
+    // Nach 3 Sekunden zurücksetzen
+    deleteProjectTimeouts[id] = setTimeout(() => {
+        if (btn) {
+            btn.classList.remove('confirming', 'bg-red-50', 'text-red-600', 'rounded-lg', 'px-3');
+            btn.classList.add('text-stone-400');
+            if (label) label.classList.add('hidden');
+        }
+    }, 3000);
 }
 
 /**

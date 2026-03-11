@@ -23,7 +23,30 @@ function startTimer(id) {
     activeTimerProjectId = id;
     timerStartTime = Date.now();
     timerStartTimeStr = getTimeString(); // Speichere die exakte Start-Uhrzeit
+    isTimerPaused = false;
+    accumulatedTime = 0;
     timerInterval = setInterval(updateTimerDisplay, 1000);
+    renderProjects();
+}
+
+/**
+ * Pausiert oder setzt den laufenden Timer fort
+ */
+function togglePause() {
+    if (!activeTimerProjectId) return;
+
+    if (!isTimerPaused) {
+        // Pausieren
+        const elapsed = Math.floor((Date.now() - timerStartTime) / 1000);
+        accumulatedTime += elapsed;
+        isTimerPaused = true;
+        clearInterval(timerInterval);
+    } else {
+        // Fortsetzen
+        timerStartTime = Date.now();
+        isTimerPaused = false;
+        timerInterval = setInterval(updateTimerDisplay, 1000);
+    }
     renderProjects();
 }
 
@@ -31,16 +54,24 @@ function startTimer(id) {
  * Stoppt den laufenden Timer und speichert die Zeit
  */
 function stopTimer() {
-    if (!activeTimerProjectId || !timerStartTime) return;
+    if (!activeTimerProjectId) return;
     
-    const elapsed = Math.floor((Date.now() - timerStartTime) / 1000);
-    logSession(activeTimerProjectId, elapsed, getTodayString(), timerStartTimeStr);
+    let totalElapsed = accumulatedTime;
+    if (!isTimerPaused && timerStartTime) {
+        totalElapsed += Math.floor((Date.now() - timerStartTime) / 1000);
+    }
+
+    if (totalElapsed > 0) {
+        logSession(activeTimerProjectId, totalElapsed, getTodayString(), timerStartTimeStr);
+    }
     
     clearInterval(timerInterval);
     activeTimerProjectId = null;
     timerStartTime = null;
     timerStartTimeStr = null;
     timerInterval = null;
+    isTimerPaused = false;
+    accumulatedTime = 0;
     renderProjects();
 }
 
@@ -48,12 +79,16 @@ function stopTimer() {
  * Aktualisiert die Timer-Anzeige jede Sekunde
  */
 function updateTimerDisplay() {
-    if (!activeTimerProjectId || !timerStartTime) return;
+    if (!activeTimerProjectId) return;
     
-    const elapsed = Math.floor((Date.now() - timerStartTime) / 1000);
+    let currentElapsed = accumulatedTime;
+    if (!isTimerPaused && timerStartTime) {
+        currentElapsed += Math.floor((Date.now() - timerStartTime) / 1000);
+    }
+
     const display = document.getElementById(`timer-display-${activeTimerProjectId}`);
     if (display) {
-        display.innerText = formatTime(elapsed);
+        display.innerText = formatTime(currentElapsed);
     }
 }
 

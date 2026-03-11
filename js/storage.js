@@ -18,6 +18,7 @@ function loadFromStorage() {
             }
             return s;
         });
+        trash = data.trash || { projects: [], sessions: [] };
         focusedProjectId = data.focusedProjectId || (projects[0]?.id || null);
     }
 
@@ -32,6 +33,7 @@ function saveToStorage() {
     const data = {
         projects: projects,
         sessions: sessions,
+        trash: trash,
         focusedProjectId: focusedProjectId
     };
     localStorage.setItem('haekelTrackerData', JSON.stringify(data));
