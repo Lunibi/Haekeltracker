@@ -12,6 +12,40 @@ function getTodayString() {
 }
 
 /**
+ * Speichert den aktuellen Timer-Zustand im LocalStorage
+ */
+function saveTimerState() {
+    const timerState = {
+        activeTimerProjectId,
+        timerStartTime,
+        timerStartTimeStr,
+        isTimerPaused,
+        accumulatedTime
+    };
+    localStorage.setItem('haekelTrackerTimerState', JSON.stringify(timerState));
+}
+
+/**
+ * Lädt den Timer-Zustand aus dem LocalStorage und stellt ihn wieder her
+ */
+function loadTimerState() {
+    const stored = localStorage.getItem('haekelTrackerTimerState');
+    if (stored) {
+        const state = JSON.parse(stored);
+        activeTimerProjectId = state.activeTimerProjectId;
+        timerStartTime = state.timerStartTime;
+        timerStartTimeStr = state.timerStartTimeStr;
+        isTimerPaused = state.isTimerPaused;
+        accumulatedTime = state.accumulatedTime || 0;
+
+        if (activeTimerProjectId && !isTimerPaused) {
+            // Falls der Timer lief, Intervall neu starten
+            timerInterval = setInterval(updateTimerDisplay, 1000);
+        }
+    }
+}
+
+/**
  * Startet den Timer für ein Projekt
  * @param {number} id - Projekt-ID
  */
@@ -25,6 +59,7 @@ function startTimer(id) {
     timerStartTimeStr = getTimeString(); // Speichere die exakte Start-Uhrzeit
     isTimerPaused = false;
     accumulatedTime = 0;
+    saveTimerState();
     timerInterval = setInterval(updateTimerDisplay, 1000);
     renderProjects();
 }
@@ -47,6 +82,7 @@ function togglePause() {
         isTimerPaused = false;
         timerInterval = setInterval(updateTimerDisplay, 1000);
     }
+    saveTimerState();
     renderProjects();
 }
 
@@ -72,6 +108,7 @@ function stopTimer() {
     timerInterval = null;
     isTimerPaused = false;
     accumulatedTime = 0;
+    localStorage.removeItem('haekelTrackerTimerState');
     renderProjects();
 }
 

@@ -9,7 +9,12 @@ function init() {
     // 1. Lokale Daten als Fallback laden
     loadFromStorage();
 
-    // 2. Firebase laden und mit Cloud synchronisieren
+    // 2. Timer-Stand wiederherstellen (falls vorhanden)
+    if (typeof loadTimerState === "function") {
+        loadTimerState();
+    }
+
+    // 3. Firebase laden und mit Cloud synchronisieren
     if (typeof initFirebase === "function") {
         initFirebase();
     }
